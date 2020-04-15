@@ -6,7 +6,7 @@
   <parent>
     <groupId>com.aerospike</groupId>
     <artifactId>aerospike-parent</artifactId>
-    <version>4.4.8</version>
+    <version>4.4.10</version>
   </parent>
   <artifactId>aerospike-benchmarks</artifactId>
   <packaging>jar</packaging>
@@ -40,14 +40,6 @@
       <artifactId>commons-cli</artifactId>
     </dependency>
   </dependencies>
-
-  <repositories>
-    <repository>
-      <id>Open NMS</id>
-      <name>Open NMS repository</name>
-      <url>http://repo.opennms.org/maven2/</url>
-    </repository>
-  </repositories>
 
   <build>
     <sourceDirectory>${project.basedir}/src</sourceDirectory>

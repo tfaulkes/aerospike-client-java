@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -16,35 +16,40 @@
  */
 package com.aerospike.client.query;
 
-import java.io.IOException;
-
 import com.aerospike.client.AerospikeException;
 import com.aerospike.client.Key;
 import com.aerospike.client.Record;
+import com.aerospike.client.cluster.Cluster;
 import com.aerospike.client.cluster.Node;
 import com.aerospike.client.command.MultiCommand;
 import com.aerospike.client.policy.QueryPolicy;
 
 public final class QueryRecordCommand extends MultiCommand {
 
-	private final QueryPolicy policy;
 	private final Statement statement;
 	private final RecordSet recordSet;
 
-	public QueryRecordCommand(Node node, QueryPolicy policy, Statement statement, RecordSet recordSet, long clusterKey, boolean first) {
-		super(node, statement.namespace, clusterKey, first);
-		this.policy = policy;
+	public QueryRecordCommand(
+		Cluster cluster,
+		Node node,
+		QueryPolicy policy,
+		Statement statement,
+		RecordSet recordSet,
+		long clusterKey,
+		boolean first
+	) {
+		super(cluster, policy, node, statement.namespace, clusterKey, first);
 		this.statement = statement;
 		this.recordSet = recordSet;
 	}
 
 	@Override
-	protected final void writeBuffer() throws AerospikeException {
-		setQuery(policy, statement, false);
+	protected final void writeBuffer() {
+		setQuery(policy, statement, false, null);
 	}
 
 	@Override
-	protected void parseRow(Key key) throws IOException {
+	protected void parseRow(Key key) {
 		Record record = parseRecord();
 
 		if (! valid) {

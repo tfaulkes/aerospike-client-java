@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -48,11 +48,7 @@ public final class IndexTask extends Task {
 	@Override
 	public int queryStatus() {
 		// All nodes must respond with load_pct of 100 to be considered done.
-		Node[] nodes = cluster.getNodes();
-
-		if (nodes.length == 0) {
-			throw new AerospikeException("Cluster is empty");
-		}
+		Node[] nodes = cluster.validateNodes();
 
 		for (Node node : nodes) {
 			if (isCreate || ! node.hasIndexExists()) {

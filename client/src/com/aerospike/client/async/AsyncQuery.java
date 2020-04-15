@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -26,25 +26,23 @@ import com.aerospike.client.query.Statement;
 
 public final class AsyncQuery extends AsyncMultiCommand {
 	private final RecordSequenceListener listener;
-	private final QueryPolicy policy;
 	private final Statement statement;
 
 	public AsyncQuery(
 		AsyncMultiExecutor parent,
 		Node node,
-		RecordSequenceListener listener,
 		QueryPolicy policy,
+		RecordSequenceListener listener,
 		Statement statement
 	) {
-		super(parent, node, policy, true);
+		super(parent, node, policy, policy.socketTimeout, policy.totalTimeout);
 		this.listener = listener;
-		this.policy = policy;
 		this.statement = statement;
 	}
 
 	@Override
 	protected void writeBuffer() throws AerospikeException {
-		setQuery(policy, statement, false);
+		setQuery(policy, statement, false, null);
 	}
 
 	@Override

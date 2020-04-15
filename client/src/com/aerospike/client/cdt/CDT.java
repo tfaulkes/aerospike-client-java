@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -139,5 +139,27 @@ public abstract class CDT {
 				packer.packArrayBegin(count);
 			}
 		}
+	}
+
+	protected static void init(Packer packer, CTX[] ctx, int command, int count, int flag) {
+		packer.packArrayBegin(3);
+		packer.packInt(0xff);
+		packer.packArrayBegin(ctx.length * 2);
+
+		CTX c;
+		int last = ctx.length - 1;
+
+		for (int i = 0; i < last; i++) {
+			c = ctx[i];
+			packer.packInt(c.id);
+			c.value.pack(packer);
+		}
+
+		c = ctx[last];
+		packer.packInt(c.id | flag);
+		c.value.pack(packer);
+
+		packer.packArrayBegin(count + 1);
+		packer.packInt(command);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -101,6 +101,22 @@ public class MapOperation {
 	private static final int GET_BY_VALUE_LIST = 108;
 	private static final int GET_BY_KEY_REL_INDEX_RANGE = 109;
 	private static final int GET_BY_VALUE_REL_RANK_RANGE = 110;
+
+	/**
+	 * Create map create operation.
+	 * Server creates map at given context level.
+	 */
+	public static Operation create(String binName, MapOrder order, CTX... ctx) {
+		// If context not defined, the set order for top-level bin map.
+		if (ctx == null || ctx.length == 0) {
+			return setMapPolicy(new MapPolicy(order, 0), binName);
+		}
+
+		Packer packer = new Packer();
+		CDT.init(packer, ctx, SET_TYPE, 1, order.flag);
+		packer.packInt(order.attributes);
+		return new Operation(Operation.Type.MAP_MODIFY, binName, Value.get(packer.toByteArray()));
+	}
 
 	/**
 	 * Create set map policy operation.

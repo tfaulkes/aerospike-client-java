@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -38,6 +38,13 @@ public final class CTX {
 	 */
 	public static CTX listIndex(int index) {
 		return new CTX(0x10, Value.get(index));
+	}
+
+	/**
+	 * Create list with given type at index offset.
+	 */
+	public static CTX listIndexCreate(int index, ListOrder order, boolean pad) {
+		return new CTX(0x10 | order.getFlag(pad), Value.get(index));
 	}
 
 	/**
@@ -92,6 +99,13 @@ public final class CTX {
 	 */
 	public static CTX mapKey(Value key) {
 		return new CTX(0x22, key);
+	}
+
+	/**
+	 * Create map with given type at map key.
+	 */
+	public static CTX mapKeyCreate(Value key, MapOrder order) {
+		return new CTX(0x22 | order.flag, key);
 	}
 
 	/**

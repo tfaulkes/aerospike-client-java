@@ -6,7 +6,7 @@
   <parent>
     <groupId>com.aerospike</groupId>
     <artifactId>aerospike-parent</artifactId>
-    <version>4.4.8</version>
+    <version>4.4.10</version>
   </parent>
   <artifactId>aerospike-client</artifactId>
   <packaging>jar</packaging>
@@ -135,6 +135,7 @@
             <include>com/aerospike/client/query/Filter.java</include>
             <include>com/aerospike/client/query/IndexCollectionType.java</include>
             <include>com/aerospike/client/query/IndexType.java</include>
+            <include>com/aerospike/client/query/PartitionFilter.java</include>
             <include>com/aerospike/client/query/PredExp.java</include>
             <include>com/aerospike/client/query/RecordSet.java</include>
             <include>com/aerospike/client/query/ResultSet.java</include>

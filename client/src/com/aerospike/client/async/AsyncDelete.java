@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -33,11 +33,16 @@ public final class AsyncDelete extends AsyncCommand {
 	private boolean existed;
 
 	public AsyncDelete(Cluster cluster, DeleteListener listener, WritePolicy writePolicy, Key key) {
-		super(writePolicy, false, true);
+		super(writePolicy, true);
 		this.listener = listener;
 		this.writePolicy = writePolicy;
 		this.key = key;
 		this.partition = Partition.write(cluster, writePolicy, key);
+	}
+
+	@Override
+	boolean isWrite() {
+		return true;
 	}
 
 	@Override

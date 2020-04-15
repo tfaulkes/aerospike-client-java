@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -17,7 +17,6 @@
 package com.aerospike.client.async;
 
 import com.aerospike.client.AerospikeException;
-import com.aerospike.client.ResultCode;
 import com.aerospike.client.cluster.Cluster;
 import com.aerospike.client.cluster.Node;
 import com.aerospike.client.listener.RecordSequenceListener;
@@ -32,16 +31,12 @@ public final class AsyncQueryExecutor extends AsyncMultiExecutor {
 		RecordSequenceListener listener,
 		Cluster cluster,
 		QueryPolicy policy,
-		Statement statement
-	) throws AerospikeException {
+		Statement statement,
+		Node[] nodes
+	) {
 		super(eventLoop, cluster);
 		this.listener = listener;
 		statement.prepare(true);
-
-		Node[] nodes = cluster.getNodes();
-		if (nodes.length == 0) {
-			throw new AerospikeException(ResultCode.SERVER_NOT_AVAILABLE, "Query failed because cluster is empty.");
-		}
 
 		// Create commands.
 		AsyncQuery[] tasks = new AsyncQuery[nodes.length];
@@ -52,7 +47,7 @@ public final class AsyncQueryExecutor extends AsyncMultiExecutor {
 			if (! node.hasClusterStable()) {
 				hasClusterStable = false;
 			}
-			tasks[count++] = new AsyncQuery(this, node, listener, policy, statement);
+			tasks[count++] = new AsyncQuery(this, node, policy, listener, statement);
 		}
 
 		// Dispatch commands to nodes.

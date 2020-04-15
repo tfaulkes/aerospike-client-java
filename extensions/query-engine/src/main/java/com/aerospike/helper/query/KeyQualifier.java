@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -51,7 +51,7 @@ public class KeyQualifier extends Qualifier {
 	public Key makeKey(String namespace, String set) {
 		if (hasDigest) {
 			byte[] digest = getDigest();
-			return new Key(namespace, digest, null, null);
+			return new Key(namespace, digest, set, null);
 		} else {
 			return new Key(namespace, set, getValue1());
 		}

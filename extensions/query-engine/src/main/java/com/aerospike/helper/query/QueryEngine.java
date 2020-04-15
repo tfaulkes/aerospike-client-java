@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -16,13 +16,46 @@
  */
 package com.aerospike.helper.query;
 
-import com.aerospike.client.*;
+import static com.aerospike.helper.query.Qualifier.FilterOperation.BETWEEN;
+import static com.aerospike.helper.query.Qualifier.FilterOperation.EQ;
+import static com.aerospike.helper.query.Qualifier.FilterOperation.GT;
+import static com.aerospike.helper.query.Qualifier.FilterOperation.GTEQ;
+import static com.aerospike.helper.query.Qualifier.FilterOperation.LT;
+import static com.aerospike.helper.query.Qualifier.FilterOperation.LTEQ;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.Predicate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.aerospike.client.AerospikeClient;
+import com.aerospike.client.AerospikeException;
+import com.aerospike.client.Bin;
+import com.aerospike.client.Info;
+import com.aerospike.client.Key;
+import com.aerospike.client.Language;
+import com.aerospike.client.Record;
 import com.aerospike.client.cluster.Node;
 import com.aerospike.client.policy.InfoPolicy;
 import com.aerospike.client.policy.QueryPolicy;
 import com.aerospike.client.policy.RecordExistsAction;
 import com.aerospike.client.policy.WritePolicy;
-import com.aerospike.client.query.*;
+import com.aerospike.client.query.Filter;
+import com.aerospike.client.query.KeyRecord;
+import com.aerospike.client.query.PartitionFilter;
+import com.aerospike.client.query.PredExp;
+import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.Statement;
 import com.aerospike.client.task.RegisterTask;
 import com.aerospike.helper.model.Index;
 import com.aerospike.helper.model.Module;
@@ -30,12 +63,8 @@ import com.aerospike.helper.model.Namespace;
 import com.aerospike.helper.query.cache.IndexCache;
 import com.aerospike.helper.query.cache.IndexInfoParser;
 import com.aerospike.helper.query.cache.IndexKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.*;
+import com.aerospike.helper.query.cache.IndexedField;
+import com.aerospike.helper.query.cache.InternalIndexOperations;
 
 /**
  * This class provides a multi-filter query engine that
@@ -50,6 +79,8 @@ public class QueryEngine implements Closeable {
 
 	protected static final String QUERY_MODULE = "as_utility"; //DO NOT use decimal places in the module name
 	protected static final String AS_UTILITY_PATH = QUERY_MODULE + ".lua";
+	private static final EnumSet<Qualifier.FilterOperation> INDEXED_OPERATIONS = EnumSet.of(
+			EQ, BETWEEN, GT, GTEQ, LT, LTEQ);
 	protected static Logger log = LoggerFactory.getLogger(QueryEngine.class);
 	protected AerospikeClient client;
 	private final IndexCache indexCache;
@@ -93,7 +124,7 @@ public class QueryEngine implements Closeable {
 				getInsertPolicy(client.writePolicyDefault),
 				client.queryPolicyDefault,
 				client.infoPolicyDefault,
-				new IndexCache(client, client.infoPolicyDefault, new IndexInfoParser()));
+				new IndexCache(client, client.infoPolicyDefault, new InternalIndexOperations(new IndexInfoParser())));
 	}
 
 	public QueryEngine(AerospikeClient client, WritePolicy updatePolicy, WritePolicy insertPolicy,
@@ -108,13 +139,13 @@ public class QueryEngine implements Closeable {
 		registerUDF();
 	}
 
-	private static WritePolicy getInsertPolicy(WritePolicy writePolicyDefault) {
+	static WritePolicy getInsertPolicy(WritePolicy writePolicyDefault) {
 		WritePolicy insertPolicy = new WritePolicy(writePolicyDefault);
 		insertPolicy.recordExistsAction = RecordExistsAction.CREATE_ONLY;
 		return insertPolicy;
 	}
 
-	private static WritePolicy getUpdatePolicy(WritePolicy writePolicyDefault) {
+	static WritePolicy getUpdatePolicy(WritePolicy writePolicyDefault) {
 		WritePolicy updatePolicy = new WritePolicy(writePolicyDefault);
 		updatePolicy.recordExistsAction = RecordExistsAction.UPDATE_ONLY;
 		return updatePolicy;
@@ -201,6 +232,68 @@ public class QueryEngine implements Closeable {
 		/*
 		 *  query with filters
 		 */
+		updateStatement(stmt, qualifiers, indexCache::hasIndexFor);
+
+		RecordSet rs;
+		if (null == node){
+			rs = client.query(queryPolicy, stmt);
+		} else{
+			rs = client.queryNode(queryPolicy, stmt, node);
+		}
+		return new KeyRecordIterator(stmt.getNamespace(), rs);
+
+	}
+
+	/**
+	 * Select query over a range of partitions.
+	 * @param stmt
+	 * @param metaOnly
+	 * @param partitionFilter
+	 * @param qualifiers
+	 * @return
+	 */
+	public KeyRecordIterator selectByPartition(Statement stmt, boolean metaOnly, PartitionFilter partitionFilter, Qualifier... qualifiers) {
+
+		/*
+		 * no filters
+		 */
+		if (qualifiers == null || qualifiers.length == 0) {
+			RecordSet recordSet = this.client.queryPartitions(queryPolicy, stmt,partitionFilter);
+			return new KeyRecordIterator(stmt.getNamespace(), recordSet);
+		}
+		/*
+		 * singleton using primary key
+		 */
+		if (qualifiers != null && qualifiers.length == 1 && qualifiers[0] instanceof KeyQualifier) {
+			KeyQualifier kq = (KeyQualifier) qualifiers[0];
+			Key key = kq.makeKey(stmt.getNamespace(), stmt.getSetName());
+			Record record = null;
+			if (metaOnly)
+				record = this.client.getHeader(null, key);
+			else
+				record = this.client.get(null, key, stmt.getBinNames());
+			if (record == null) {
+				return new KeyRecordIterator(stmt.getNamespace());
+			} else {
+				KeyRecord keyRecord = new KeyRecord(key, record);
+				return new KeyRecordIterator(stmt.getNamespace(), keyRecord);
+			}
+		}
+		/*
+		 *  query with filters
+		 */
+		updateStatement(stmt, qualifiers, indexCache::hasIndexFor);
+		RecordSet rs=client.queryPartitions(queryPolicy, stmt, partitionFilter);
+
+		return new KeyRecordIterator(stmt.getNamespace(), rs);
+
+	}
+
+	static void updateStatement(Statement stmt, Qualifier[] qualifiers,
+								Predicate<IndexedField> indexPresent){
+		/*
+		 *  query with filters
+		 */
 		for (int i = 0; i < qualifiers.length; i++) {
 			Qualifier qualifier = qualifiers[i];
 
@@ -214,7 +307,7 @@ public class QueryEngine implements Closeable {
 						break;
 					}
 				}
-			} else if (isIndexedBin(stmt, qualifier)) {
+			} else if (isIndexedBin(stmt, qualifier, indexPresent)) {
 				Filter filter = qualifier.asFilter();
 				if (filter != null) {
 					stmt.setFilter(filter);
@@ -224,13 +317,7 @@ public class QueryEngine implements Closeable {
 					 * the query iterator.
 					 */
 					if (qualifiers.length == 1) {
-						RecordSet rs;
-						if (null == node){
-							rs = client.query(queryPolicy, stmt);
-						} else{
-							rs = client.queryNode(queryPolicy, stmt, node);
-						}
-						return new KeyRecordIterator(stmt.getNamespace(), rs);
+						return;
 					}
 					break;
 				}
@@ -242,13 +329,7 @@ public class QueryEngine implements Closeable {
 			predexps = buildPredExp(qualifiers).toArray(new PredExp[0]);
 			if(predexps.length > 0) {
 				stmt.setPredExp(predexps);
-				RecordSet rs;
-				if(null == node){
-					rs = client.query(queryPolicy, stmt);
-				}else{
-					rs = client.queryNode(queryPolicy, stmt, node);
-				}
-				return new KeyRecordIterator(stmt.getNamespace(), rs);
+				return;
 			}else{
 				throw new QualifierException("Failed to build Query");
 			}
@@ -257,24 +338,12 @@ public class QueryEngine implements Closeable {
 		}
 	}
 
+	private static boolean isIndexedBin(Statement stmt, Qualifier qualifier,
+										Predicate<IndexedField> indexPresent) {
+        if(null == qualifier.getField()) return false;
 
-
-	protected boolean isIndexedBin(Statement stmt, Qualifier qualifier) {
-		if(null == qualifier.getField()) return false;
-		Optional<Index> index = indexCache.getIndex(getIndexKey(stmt, qualifier));
-		if (!index.isPresent())
-			return false;
-
-		switch (qualifier.getOperation()){
-			case EQ: case BETWEEN: case GT: case GTEQ: case LT: case LTEQ:
-				return true;
-			default:
-				return false;
-		}
-	}
-
-	private IndexKey getIndexKey(Statement stmt, Qualifier qualifier) {
-		return new IndexKey(stmt.getNamespace(), stmt.getSetName(), qualifier.getField());
+		return INDEXED_OPERATIONS.contains(qualifier.getOperation())
+				&& indexPresent.test(new IndexedField(stmt.getNamespace(), stmt.getSetName(), qualifier.getField()));
 	}
 
 	/*
@@ -445,7 +514,7 @@ public class QueryEngine implements Closeable {
 		return map;
 	}
 
-	protected List<PredExp> buildPredExp(Qualifier[] qualifiers) throws PredExpException{
+	protected static List<PredExp> buildPredExp(Qualifier[] qualifiers) throws PredExpException{
 		List<PredExp> pes = new ArrayList<PredExp>();
 		int qCount = 0;
 		for(Qualifier q : qualifiers){

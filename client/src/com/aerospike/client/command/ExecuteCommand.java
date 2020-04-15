@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -38,7 +38,7 @@ public final class ExecuteCommand extends ReadCommand {
 		String functionName,
 		Value[] args
 	) {
-		super(writePolicy, key, Partition.write(cluster, writePolicy, key));
+		super(cluster, writePolicy, key, Partition.write(cluster, writePolicy, key));
 		this.writePolicy = writePolicy;
 		this.packageName = packageName;
 		this.functionName = functionName;
@@ -46,7 +46,12 @@ public final class ExecuteCommand extends ReadCommand {
 	}
 
 	@Override
-	protected Node getNode(Cluster cluster) {
+	protected boolean isWrite() {
+		return true;
+	}
+
+	@Override
+	protected Node getNode() {
 		return partition.getNodeWrite(cluster);
 	}
 

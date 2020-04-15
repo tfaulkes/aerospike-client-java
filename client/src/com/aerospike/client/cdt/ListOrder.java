@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -34,5 +34,9 @@ public enum ListOrder {
 
 	private ListOrder(int attributes) {
 		this.attributes = attributes;
+	}
+
+	int getFlag(boolean pad) {
+		return (attributes == 1)? 0xc0 : pad ? 0x80 : 0x40;
 	}
 }

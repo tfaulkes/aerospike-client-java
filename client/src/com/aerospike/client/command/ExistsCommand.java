@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -28,19 +28,18 @@ import com.aerospike.client.cluster.Partition;
 import com.aerospike.client.policy.Policy;
 
 public final class ExistsCommand extends SyncCommand {
-	private final Policy policy;
 	private final Key key;
 	private final Partition partition;
 	private boolean exists;
 
 	public ExistsCommand(Cluster cluster, Policy policy, Key key) {
-		this.policy = policy;
+		super(cluster, policy);
 		this.key = key;
 		this.partition = Partition.read(cluster, policy, key);
 	}
 
 	@Override
-	protected Node getNode(Cluster cluster) {
+	protected Node getNode() {
 		return partition.getNodeRead(cluster);
 	}
 

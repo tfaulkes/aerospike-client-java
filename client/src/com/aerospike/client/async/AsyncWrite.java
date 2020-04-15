@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -43,13 +43,18 @@ public final class AsyncWrite extends AsyncCommand {
 		Bin[] bins,
 		Operation.Type operation
 	) {
-		super(writePolicy, false, true);
+		super(writePolicy, true);
 		this.listener = listener;
 		this.writePolicy = writePolicy;
 		this.key = key;
 		this.partition = Partition.write(cluster, writePolicy, key);
 		this.bins = bins;
 		this.operation = operation;
+	}
+
+	@Override
+	boolean isWrite() {
+		return true;
 	}
 
 	@Override

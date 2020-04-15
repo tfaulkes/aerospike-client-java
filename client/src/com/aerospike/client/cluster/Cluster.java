@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import com.aerospike.client.AerospikeException;
 import com.aerospike.client.Host;
 import com.aerospike.client.Log;
+import com.aerospike.client.ResultCode;
 import com.aerospike.client.admin.AdminCommand;
 import com.aerospike.client.async.EventLoop;
 import com.aerospike.client.async.EventLoopStats;
@@ -123,6 +124,9 @@ public class Cluster implements Runnable, Closeable {
 	// Login timeout.
 	public final int loginTimeout;
 
+	// Rack id.
+	public final int rackId;
+
 	// Interval in milliseconds between cluster tends.
 	private final int tendInterval;
 
@@ -142,8 +146,7 @@ public class Cluster implements Runnable, Closeable {
 	// Request server rack ids.
 	final boolean rackAware;
 
-	// Rack id.
-	public final int rackId;
+	public boolean hasPartitionScan;
 
 	private boolean asyncComplete;
 
@@ -656,6 +659,7 @@ public class Cluster implements Runnable, Closeable {
 				aliases.put(alias, node);
 			}
 		}
+		hasPartitionScan = Cluster.supportsPartitionScan(nodeArray);
 
 		// Replace nodes with copy.
 		nodes = nodeArray;
@@ -717,6 +721,7 @@ public class Cluster implements Runnable, Closeable {
 			System.arraycopy(nodeArray, 0, nodeArray2, 0, count);
 			nodeArray = nodeArray2;
 		}
+		hasPartitionScan = Cluster.supportsPartitionScan(nodeArray);
 
 		// Replace nodes with copy.
 		nodes = nodeArray;
@@ -770,6 +775,16 @@ public class Cluster implements Runnable, Closeable {
 	public final Node[] getNodes() {
 		// Must copy array reference for copy on write semantics to work.
 		Node[] nodeArray = nodes;
+		return nodeArray;
+	}
+
+	public final Node[] validateNodes() {
+		// Must copy array reference for copy on write semantics to work.
+		Node[] nodeArray = nodes;
+
+		if (nodeArray.length == 0) {
+			throw new AerospikeException(ResultCode.SERVER_NOT_AVAILABLE, "Cluster is empty");
+		}
 		return nodeArray;
 	}
 
@@ -900,6 +915,19 @@ public class Cluster implements Runnable, Closeable {
 				this.password = password;
 			}
 		}
+	}
+
+	private static boolean supportsPartitionScan(Node[] nodes) {
+		if (nodes.length == 0) {
+			return false;
+		}
+
+		for (Node node : nodes) {
+			if (! node.hasPartitionScan()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public final ExecutorService getThreadPool() {

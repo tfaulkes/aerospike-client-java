@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -25,6 +25,9 @@ public final class FieldType {
 	public final static int SCAN_OPTIONS = 8;
 	public final static int SCAN_TIMEOUT = 9;
 	public final static int RECORDS_PER_SECOND = 10;
+	public final static int PID_ARRAY = 11;
+	public final static int DIGEST_ARRAY = 12;
+	public final static int SCAN_MAX_RECORDS = 13;
 	public final static int INDEX_NAME = 21;
 	public final static int INDEX_RANGE = 22;
 	public final static int INDEX_FILTER = 23;

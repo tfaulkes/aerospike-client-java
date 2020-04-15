@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -21,6 +21,11 @@ package com.aerospike.client;
  * side file proto.h.
  */
 public final class ResultCode {
+	/**
+	 * Max retries limit reached.
+	 */
+	public static final int MAX_RETRIES_EXCEEDED = -11;
+
 	/**
 	 * Client serialization error.
 	 */
@@ -423,6 +428,9 @@ public final class ResultCode {
 	 */
 	public static String getResultString(int resultCode) {
 		switch (resultCode) {
+
+		case MAX_RETRIES_EXCEEDED:
+			return "Max retries exceeded";
 
 		case SERIALIZE_ERROR:
 			return "Serialize error";

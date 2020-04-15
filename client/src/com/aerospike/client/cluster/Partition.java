@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -120,9 +120,13 @@ public final class Partition {
 		this.namespace = key.namespace;
 		this.replica = replica;
 		this.linearize = linearize;
+		this.partitionId = getPartitionId(key.digest);
+	}
+
+	public static int getPartitionId(byte[] digest) {
 		// CAN'T USE MOD directly - mod will give negative numbers.
 		// First AND makes positive and negative correctly, then mod.
-		this.partitionId = (Buffer.littleBytesToInt(key.digest, 0) & 0xFFFF) % Node.PARTITIONS;
+		return (Buffer.littleBytesToInt(digest, 0) & 0xFFFF) % Node.PARTITIONS;
 	}
 
 	public Node getNodeRead(Cluster cluster) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -56,6 +56,7 @@ public class Node implements Closeable {
 	public static final int HAS_REPLICAS = (1 << 5);
 	public static final int HAS_CLUSTER_STABLE = (1 << 6);
 	public static final int HAS_LUT_NOW = (1 << 7);
+	public static final int HAS_PARTITION_SCAN = (1 << 8);
 
 	private static final String[] INFO_PERIODIC = new String[] {"node", "peers-generation", "partition-generation"};
 	private static final String[] INFO_PERIODIC_REB = new String[] {"node", "peers-generation", "partition-generation", "rebalance-generation"};
@@ -905,6 +906,13 @@ public class Node implements Closeable {
 	 */
 	public final boolean hasIndexExists() {
 		return (features & HAS_INDEX_EXISTS) != 0;
+	}
+
+	/**
+	 * Does server support partition scans.
+	 */
+	public final boolean hasPartitionScan() {
+		return (features & HAS_PARTITION_SCAN) != 0;
 	}
 
 	@Override

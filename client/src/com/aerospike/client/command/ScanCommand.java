@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -16,48 +16,53 @@
  */
 package com.aerospike.client.command;
 
-import java.io.IOException;
-
 import com.aerospike.client.AerospikeException;
 import com.aerospike.client.Key;
 import com.aerospike.client.Record;
 import com.aerospike.client.ScanCallback;
+import com.aerospike.client.cluster.Cluster;
 import com.aerospike.client.cluster.Node;
 import com.aerospike.client.policy.ScanPolicy;
 
 public final class ScanCommand extends MultiCommand {
-	private final ScanPolicy policy;
+	private final ScanPolicy scanPolicy;
 	private final String setName;
-	private final ScanCallback callback;
 	private final String[] binNames;
+	private final ScanCallback callback;
 	private final long taskId;
 
 	public ScanCommand(
+		Cluster cluster,
 		Node node,
-		ScanPolicy policy,
+		ScanPolicy scanPolicy,
 		String namespace,
 		String setName,
-		ScanCallback callback,
 		String[] binNames,
+		ScanCallback callback,
 		long taskId,
 		long clusterKey,
 		boolean first
 	) {
-		super(node, namespace, clusterKey, first);
-		this.policy = policy;
+		super(cluster, scanPolicy, node, namespace, clusterKey, first);
+		this.scanPolicy = scanPolicy;
 		this.setName = setName;
-		this.callback = callback;
 		this.binNames = binNames;
+		this.callback = callback;
 		this.taskId = taskId;
 	}
 
 	@Override
-	protected void writeBuffer() throws AerospikeException {
-		setScan(policy, namespace, setName, binNames, taskId);
+	public void execute() {
+		executeAndValidate();
 	}
 
 	@Override
-	protected void parseRow(Key key) throws IOException {
+	protected void writeBuffer() {
+		setScan(scanPolicy, namespace, setName, binNames, taskId, null);
+	}
+
+	@Override
+	protected void parseRow(Key key) {
 		Record record = parseRecord();
 
 		if (! valid) {

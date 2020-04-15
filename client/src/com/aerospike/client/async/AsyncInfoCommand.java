@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -34,7 +34,7 @@ public final class AsyncInfoCommand extends AsyncCommand {
 	private Map<String,String> map;
 
 	public AsyncInfoCommand(InfoListener listener, InfoPolicy policy, Node node, String... commands) {
-		super(createPolicy(policy), false, true);
+		super(createPolicy(policy), true);
 		this.listener = listener;
 		this.node = node;
 		this.commands = commands;
@@ -50,6 +50,11 @@ public final class AsyncInfoCommand extends AsyncCommand {
 			p.setTimeout(policy.timeout);
 		}
 		return p;
+	}
+
+	@Override
+	boolean isWrite() {
+		return true;
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -43,12 +43,17 @@ public final class AsyncExecute extends AsyncRead {
 		String functionName,
 		Value[] args
 	) {
-		super(null, writePolicy, key, false, Partition.write(cluster, writePolicy, key));
+		super(null, writePolicy, key, Partition.write(cluster, writePolicy, key));
 		this.executeListener = listener;
 		this.writePolicy = writePolicy;
 		this.packageName = packageName;
 		this.functionName = functionName;
 		this.args = args;
+	}
+
+	@Override
+	boolean isWrite() {
+		return true;
 	}
 
 	@Override

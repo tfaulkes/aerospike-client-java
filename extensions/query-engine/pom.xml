@@ -6,7 +6,7 @@
   <parent>
     <groupId>com.aerospike</groupId>
     <artifactId>aerospike-client-extensions</artifactId>
-    <version>4.4.8</version>
+    <version>4.4.10</version>
   </parent>
   <artifactId>aerospike-query-engine</artifactId>
   <packaging>jar</packaging>
@@ -69,6 +69,7 @@
     <dependency>
       <groupId>com.aerospike</groupId>
       <artifactId>aerospike-client</artifactId>
+      <version>4.4.9</version>
     </dependency>
 
     <dependency>
@@ -79,7 +80,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>[1.7.25,)</version>
       <scope>provided</scope>
     </dependency>
 

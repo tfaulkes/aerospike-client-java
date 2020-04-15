@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -34,7 +34,7 @@ public final class AsyncReadHeader extends AsyncCommand {
 	private Record record;
 
 	public AsyncReadHeader(Cluster cluster, RecordListener listener, Policy policy, Key key) {
-		super(policy, true, true);
+		super(policy, true);
 		this.listener = listener;
 		this.key = key;
 		this.partition = Partition.read(cluster, policy, key);

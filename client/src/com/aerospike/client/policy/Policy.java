@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -24,7 +24,10 @@ import com.aerospike.client.query.PredExp;
 public class Policy {
 	/**
 	 * Priority of request relative to other transactions.
-	 * Currently, only used for scans.
+	 * Only used for scans on server versions < 4.9.
+	 * <p>
+	 * Priority is obsolete and will eventually be removed.
+	 * Use {@link ScanPolicy#recordsPerSecond} instead of priority.
 	 */
 	public Priority priority = Priority.DEFAULT;
 
@@ -140,7 +143,12 @@ public class Policy {
 	 * <p>
 	 * Default for read: 2 (initial attempt + 2 retries = 3 attempts)
 	 * <p>
-	 * Default for write/query/scan: 0 (no retries)
+	 * Default for write: 0 (no retries)
+	 * <p>
+	 * Default for partition scan or query with null filter: 5
+	 * (6 attempts. See {@link ScanPolicy#ScanPolicy()} comments.)
+	 * <p>
+	 * No default for legacy scan/query. No retries are allowed for these commands.
 	 */
 	public int maxRetries = 2;
 
@@ -178,11 +186,10 @@ public class Policy {
 	public boolean sendKey;
 
 	/**
-	 * Use zlib compression on write or batch read commands when the command buffer size is greater
-	 * than 128 bytes.  In addition, tell the server to compress it's response on read commands.
-	 * The server response compression threshold is also 128 bytes.
+	 * Use zlib compression on command buffers sent to the server and responses received
+	 * from the server when the buffer size is greater than 128 bytes.
 	 * <p>
-	 * This option will increase cpu and memory usage (for extra compressed buffers), but
+	 * This option will increase cpu and memory usage (for extra compressed buffers),but
 	 * decrease the size of data sent over the network.
 	 * <p>
 	 * Default: false

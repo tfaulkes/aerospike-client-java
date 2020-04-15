@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -46,15 +46,26 @@ public abstract class AsyncCommand extends Command {
 	Policy policy;
 	ArrayDeque<byte[]> bufferQueue;
 	int receiveSize;
-	boolean isRead;
 	final boolean isSingle;
 	boolean compressed;
 	boolean valid = true;
 
-	public AsyncCommand(Policy policy, boolean isRead, boolean isSingle) {
+	/**
+	 * Default constructor.
+	 */
+	public AsyncCommand(Policy policy, boolean isSingle) {
+		super(policy.socketTimeout, policy.totalTimeout, policy.maxRetries);
 		this.policy = policy;
-		this.isRead = isRead;
 		this.isSingle = isSingle;
+	}
+
+	/**
+	 * Scan/Query constructor.
+	 */
+	public AsyncCommand(Policy policy, int socketTimeout, int totalTimeout) {
+		super(socketTimeout, totalTimeout, 0);
+		this.policy = policy;
+		this.isSingle = false;
 	}
 
 	final int parseProto(long proto) {
@@ -164,6 +175,10 @@ public abstract class AsyncCommand extends Command {
 
 	boolean retryBatch(Runnable command, long deadline) {
 		// Override this method in batch to regenerate node assignments.
+		return false;
+	}
+
+	boolean isWrite() {
 		return false;
 	}
 

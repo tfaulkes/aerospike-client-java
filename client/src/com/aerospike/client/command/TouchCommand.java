@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 Aerospike, Inc.
+ * Copyright 2012-2020 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements WHICH ARE COMPATIBLE WITH THE APACHE LICENSE, VERSION 2.0.
@@ -28,24 +28,30 @@ import com.aerospike.client.cluster.Partition;
 import com.aerospike.client.policy.WritePolicy;
 
 public final class TouchCommand extends SyncCommand {
-	private final WritePolicy policy;
+	private final WritePolicy writePolicy;
 	private final Key key;
 	private final Partition partition;
 
-	public TouchCommand(Cluster cluster, WritePolicy policy, Key key) {
-		this.policy = policy;
+	public TouchCommand(Cluster cluster, WritePolicy writePolicy, Key key) {
+		super(cluster, writePolicy);
+		this.writePolicy = writePolicy;
 		this.key = key;
-		this.partition = Partition.write(cluster, policy, key);
+		this.partition = Partition.write(cluster, writePolicy, key);
 	}
 
 	@Override
-	protected Node getNode(Cluster cluster) {
+	protected boolean isWrite() {
+		return true;
+	}
+
+	@Override
+	protected Node getNode() {
 		return partition.getNodeWrite(cluster);
 	}
 
 	@Override
 	protected void writeBuffer() {
-		setTouch(policy, key);
+		setTouch(writePolicy, key);
 	}
 
 	@Override
@@ -61,7 +67,7 @@ public final class TouchCommand extends SyncCommand {
 		}
 
 		if (resultCode == ResultCode.FILTERED_OUT) {
-			if (policy.failOnFilteredOut) {
+			if (writePolicy.failOnFilteredOut) {
 				throw new AerospikeException(resultCode);
 			}
 			return;
